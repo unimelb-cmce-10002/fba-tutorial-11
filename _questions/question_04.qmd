@@ -1,12 +1,175 @@
-<!-- question-type: prepare -->
-### Exercise 4: Title
+<!-- question-type: inclass -->
+### Exercise 4: Evaluating flexible prediction models and trading off fit vs generalizability
 
-This is the text for the question, with its accompanying code 
+Now that we have fitted our OLS prediction models, let's see how well these models perform out-of-sample.
+
+**(a).** Run the following chunk of code that filters our test sample so that it only includes those levels of categorical variables (e.g., opp) that our models saw in our training sample. Why do we need to do this? What would happen if we did not do this?
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+known_opp_levels <- 
+  training_sample_2005_2012 |> 
+  pull(opp) |> 
+  as.factor() |> 
+  levels()
+
+safe_test_sample <- 
+  test_sample_2013_2015 |>
+  filter(opp %in% known_opp_levels)
 ```
+
+**(b).** Now, using this `safe_test_sample`, generate out-of-sample predictions for each of our three OLS models. Complete and run the code below to do this.
+
+```{r}
+#| eval: false
+
+safe_test_sample <- 
+  safe_test_sample |>
+  mutate(
+    predicted_attendance_basic_OLS = predict(YOUR_CODE_HERE, newdata = YOUR_CODE_HERE),
+    predicted_attendance_non_linear_OLS  = predict(YOUR_CODE_HERE, newdata = YOUR_CODE_HERE),
+    predicted_attendance_eighth_poly_OLS = predict(YOUR_CODE_HERE, newdata = YOUR_CODE_HERE)
+  )
+```
+
+**(c).** Run the following chunks of code. The first computes the out-of-sample diagnostics for each of our three OLS models. The second plots each of these metrics. Which model performs best out-of-sample? How does this compare to the in-sample performance we saw earlier?
+
+```{r}
+#| eval: false
+
+basic_ols_model_errors <-
+  safe_test_sample |>
+  select(attendance, predicted_attendance_basic_OLS) |>
+  mutate(
+    error            = attendance - predicted_attendance_basic_OLS,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+basic_ols_model_metrics <-
+  basic_ols_model_errors |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+
+non_linear_ols_model_errors <-
+  safe_test_sample |>
+  select(attendance, predicted_attendance_non_linear_OLS) |>
+  mutate(
+    error            = attendance - predicted_attendance_non_linear_OLS,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+non_linear_ols_model_metrics <-
+  non_linear_ols_model_errors |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+
+eighth_poly_ols_model_errors <-
+  safe_test_sample |>
+  select(attendance, predicted_attendance_eighth_poly_OLS) |>
+  mutate(
+    error            = attendance - predicted_attendance_eighth_poly_OLS,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+eighth_poly_ols_model_metrics <-
+  eighth_poly_ols_model_errors |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+```
+
+```{r}
+#| eval: false
+
+basic_ols_model_metrics <-
+  basic_ols_model_metrics |>
+  mutate(model = "Basic OLS")
+
+non_linear_ols_model_metrics <-
+  non_linear_ols_model_metrics |>
+  mutate(model = "Non-Linear OLS")
+
+eighth_poly_ols_model_metrics <-
+  eighth_poly_ols_model_metrics |>
+  mutate(model = "Degree-8 Poly OLS")
+
+richer_model_metrics <-
+  basic_ols_model_metrics |>
+  bind_rows(non_linear_ols_model_metrics) |>
+  bind_rows(eighth_poly_ols_model_metrics)
+
+richer_metrics_long <-
+  richer_model_metrics |>
+  pivot_longer(cols = -model, names_to = "metric", values_to = "value")
+
+ggplot(richer_metrics_long, aes(x = model, y = value, fill = model)) +
+  geom_col() +
+  geom_text(aes(label = round(value, 2)), vjust = -0.5, size = 3) +
+  facet_wrap(~ metric, scales = "free_y") +
+  ggokabeito::scale_fill_okabe_ito() +
+  labs(
+    title = "Forecast Accuracy Metrics by Model",
+    x = "Model",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+**(d).** Let's quickly return to our in-sample metrics. Run the following code to combine and plot the in-sample metrics for each of our three OLS models. How do these compare to the out-of-sample metrics we just computed? Do you find this surprising?
+
+```{r}
+#| eval: false
+
+r2_basic <-
+  summary(basic_ols_model)$r.squared
+
+r2_nonlinear <-
+  summary(non_linear_ols_model)$r.squared
+
+r2_eighth_poly <-
+  summary(eighth_poly_ols_model)$r.squared
+
+r2_df <- data.frame(
+  Model = c("Basic OLS", "Nonlinear OLS", "Degree-8 Poly OLS"),
+  R2    = c(r2_basic, r2_nonlinear, r2_eighth_poly)
+)
+
+ggplot(r2_df, aes(x = Model, y = R2, fill = Model)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = round(R2, 3)), vjust = -0.5, size = 3) +
+  ggokabeito::scale_fill_okabe_ito() +
+  labs(
+    title = "Comparison of R² Across Models",
+    x     = "Model",
+    y     = "R²"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "none",
+    axis.text.x     = element_text(angle = 45, hjust = 1),
+    plot.margin     = margin(5, 5, 5, 5)
+  )
+```
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -22,20 +185,38 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- XXXXX
+- Enforce safe prediction by aligning factor levels across train/test.
+- Compute OOS (out-of-sample) errors (MAE/RMSE/MAPE) and interpret magnitudes.
+- Compare model complexity vs generalization (basic OLS, quadratic, degree-8).
+- Communicate why R² ≠ forecast quality and why we validate on a time-held-out test set.
 
 ✅   **Core Concepts to Highlight**
 
-List them here
+- Design matrix compatibility: Categorical levels unseen in training break model.matrix()/predict(). Filter or map them before scoring.
+
+- Train/test split by time prevents leakage and better reflects deployment.
+
+- Complexity penalty: high-degree polynomials often overfit; modest R² improvements rarely translate into lower test error.
 
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-List as needed
+- “Why does predict() fail or return NA for unseen opp levels?”
+
+- “Do the rank-order results match your expectations from Exercise 3? If not, why might that be?”
+
+- “Degree-8 has the best R²—so why isn’t it best OOS?”
+
 
 📌 **Common Misunderstandings**
 
-List as needed
+- “R² is king.” Students assume higher R² ⇒ better forecasts. Emphasize OOS metrics.
+
+- MAPE misuse. Forgetting division by small actuals inflates MAPE; interpret carefully.
+
+- Dropping rows = bias. Filtering to known levels is necessary for comparability; discuss alternatives (e.g., “Other” bucket) and their implications.
+
+- Reusing training data in predict(). Must pass the test (safe_test_sample) to avoid leakage.
 
 :::
 
@@ -55,11 +236,173 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+**(a). Generating a safe test sample**
 
 ```{r}
-print("Hello, world!")
+known_opp_levels <- 
+  training_sample_2005_2012 |> 
+  pull(opp) |> 
+  as.factor() |> 
+  levels()
+
+safe_test_sample <- 
+  test_sample_2013_2015 |>
+  filter(opp %in% known_opp_levels)
 ```
+
+We filter the test set to known factor levels because the fitted OLS encodes dummy variables only for levels seen in training; for an unseen opponent, the model has no coefficients, so predict() can’t construct the model matrix.
+
+If we didn’t do this, those rows would yield errors or NA predictions, breaking evaluation and making metrics incomparable. This keeps the test set valid for the trained design matrix and ensures a fair out-of-sample assessment.
+
+**(b). Generating out-of-sample predictions**
+
+```{r}
+safe_test_sample <-
+  safe_test_sample |>
+  mutate(
+    predicted_attendance_basic_OLS       = predict(basic_ols_model,       newdata = safe_test_sample),
+    predicted_attendance_non_linear_OLS  = predict(non_linear_ols_model,  newdata = safe_test_sample),
+    predicted_attendance_eighth_poly_OLS = predict(eighth_poly_ols_model, newdata = safe_test_sample)
+  )
+```
+
+**(c). Evaluating out-of-sample performance**
+
+```{r}
+basic_ols_model_errors <-
+  safe_test_sample |>
+  select(attendance, predicted_attendance_basic_OLS) |>
+  mutate(
+    error            = attendance - predicted_attendance_basic_OLS,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+basic_ols_model_metrics <-
+  basic_ols_model_errors |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+
+non_linear_ols_model_errors <-
+  safe_test_sample |>
+  select(attendance, predicted_attendance_non_linear_OLS) |>
+  mutate(
+    error            = attendance - predicted_attendance_non_linear_OLS,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+non_linear_ols_model_metrics <-
+  non_linear_ols_model_errors |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+
+eighth_poly_ols_model_errors <-
+  safe_test_sample |>
+  select(attendance, predicted_attendance_eighth_poly_OLS) |>
+  mutate(
+    error            = attendance - predicted_attendance_eighth_poly_OLS,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+eighth_poly_ols_model_metrics <-
+  eighth_poly_ols_model_errors |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+```
+
+```{r}
+basic_ols_model_metrics <-
+  basic_ols_model_metrics |>
+  mutate(model = "Basic OLS")
+
+non_linear_ols_model_metrics <-
+  non_linear_ols_model_metrics |>
+  mutate(model = "Non-Linear OLS")
+
+eighth_poly_ols_model_metrics <-
+  eighth_poly_ols_model_metrics |>
+  mutate(model = "Degree-8 Poly OLS")
+
+richer_model_metrics <-
+  basic_ols_model_metrics |>
+  bind_rows(non_linear_ols_model_metrics) |>
+  bind_rows(eighth_poly_ols_model_metrics)
+
+richer_metrics_long <-
+  richer_model_metrics |>
+  pivot_longer(cols = -model, names_to = "metric", values_to = "value")
+
+ggplot(richer_metrics_long, aes(x = model, y = value, fill = model)) +
+  geom_col() +
+  geom_text(aes(label = round(value, 2)), vjust = -0.5, size = 3) +
+  facet_wrap(~ metric, scales = "free_y") +
+  ggokabeito::scale_fill_okabe_ito() +
+  labs(
+    title = "Forecast Accuracy Metrics by Model",
+    x = "Model",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+The out-of-sample metrics show that the non-linear OLS model performs best, with the lowest MAE, RMSE, and MAPE. This contrasts with the in-sample results where the degree-8 polynomial had the best fit. The simpler non-linear model generalizes better to unseen data, highlighting the trade-off between fit and generalizability.
+
+**(d). Directly comparing in-sample and out-of-sample metrics**
+
+```{r}
+r2_basic <-
+  summary(basic_ols_model)$r.squared
+
+r2_nonlinear <-
+  summary(non_linear_ols_model)$r.squared
+
+r2_eighth_poly <-
+  summary(eighth_poly_ols_model)$r.squared
+
+r2_df <- data.frame(
+  Model = c("Basic OLS", "Nonlinear OLS", "Degree-8 Poly OLS"),
+  R2    = c(r2_basic, r2_nonlinear, r2_eighth_poly)
+)
+
+ggplot(r2_df, aes(x = Model, y = R2, fill = Model)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = round(R2, 3)), vjust = -0.5, size = 3) +
+  ggokabeito::scale_fill_okabe_ito() +
+  labs(
+    title = "Comparison of R² Across Models",
+    x     = "Model",
+    y     = "R²"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "none",
+    axis.text.x     = element_text(angle = 45, hjust = 1),
+    plot.margin     = margin(5, 5, 5, 5)
+  )
+```
+
+Our more complex, highly flexible model does the best in-sample (i.e., it most tightly fits the training data). But it does not generalize well to unseen data, as shown by its mediocre out-of-sample performance. The Non-Linear OLS model strikes the best balance between fit and generalization, capturing real patterns without overfitting noise (a model can have low R² yet smaller test errors if it avoids overfitting and targets the signal that actually repeats).
+
+This makes clear why we use a test/training split when estimating and evaluating prediction models: it helps us detect overfitting and select models that will perform well in practice, not just on historical data.
+
 :::
 
 :::

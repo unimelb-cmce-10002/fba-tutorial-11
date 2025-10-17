@@ -1,9 +1,7 @@
 project:
   render:
     - tutorial.qmd
-title: 'Questions document: R version'
-execute:
-  eval: false
+title: 'Tutorial 11: Predictive Analytics for Workforce Planning'
 format:
   html:
     output-file: "tutorial-r-questions"

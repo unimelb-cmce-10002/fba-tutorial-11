@@ -1,3 +1,69 @@
 ## The Business Challenge
 
-Explain the Business Challenge and set up in this file
+```{r}
+#| warning: false
+#| echo: false
+library(tidyverse)
+library(slider)
+library(ggokabeito)
+```
+
+```{r}
+#| warning: false
+#| eval: true
+#| echo: false
+#| cache: true
+
+# Load the data
+bos_2005_2015_fenway <- 
+  read_csv('data/mlb_attendance.csv')
+
+```
+
+### Using predictive analytics to navigate demand uncertainty and improve staffing decisions
+
+In operations, managers must match capacity (people, time, equipment) to demand that arrives with uncertainty. Overstaffing raises costs; understaffing creates queues, slower service, and lost revenue. Prediction is the tool that turns historical data into forward-looking staffing guidance.
+
+As in the lecture, our setting is MLB game attendance at Fenway Park, home of the Boston Red Sox. Concession managers need to staff bars and food stands for each Red Sox home game. The core uncertainty is attendance (how many fans show up). Attendance varies systematically with observable game features—e.g., day vs night, day of week, and opponent (rivalry effects)—and is bounded above by a capacity ceiling (sellouts cluster near the right edge of the distribution).
+
+In this setting, the workflow that links demand forecasts to roster works as follows:
+
+1. Forecast demand: Predict game-level attendance using historical patterns (e.g., cell-means or OLS models).
+2. Translate to headcount: Convert predicted attendance into required staff using service rates (e.g., “one staff member can serve ~k customers per hour”).
+3. Build the roster: Schedule staff to shifts ahead of time, subject to capacity and cost constraints.
+
+Getting this workflow right is critical to business success. Accurate, well-calibrated forecasts let you set a baseline headcount and add a buffer sized to typical forecast error (e.g., MAE), striking a balance between cost and service quality.
+
+In this week's workshop, we are going to get a feel for this workflow by tackling the following tasks:
+
+- Exploration: Verify that day/night and opponent relate to attendance (so they’re worth using in models).
+- Time-based splitting: Fit on earlier seasons, evaluate on later seasons to avoid look-ahead bias.
+- Simple predictors: Use cell means (Day/Night; dotw × D/N; Opponent) for transparent, explainable baselines.
+- Linear models: Compare Basic OLS, Quadratic in game number, and a Degree-8 polynomial—see how fit ≠ generalisation.
+- Metrics: Judge models with MAE/RMSE/MAPE on the test set and connect those magnitudes to staffing buffers.
+
+While doing so, we will keep our eye on the big picture: Our goal isn’t a perfect forecast; it’s a useful one—accurate enough, early enough, and explainable enough to make better staffing decisions.
+
+Let's get started!
+
+### Getting set up
+
+First, we need to load our packages:
+
+```{r}
+#| eval: false
+
+library(tidyverse)
+library(scales)
+library(ggokabeito)
+```
+
+Next, we need to load our dataset.
+
+```{r}
+#| eval: false
+
+bos_2005_2015_fenway <- 
+  read_csv('data/mlb_attendance.csv')
+
+```

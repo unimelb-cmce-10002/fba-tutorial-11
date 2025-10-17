@@ -1,12 +1,125 @@
 <!-- question-type: prepare -->
-### Exercise 2: Title
+### Exercise 2: Evaluating model performance in the test set
 
-This is the text for the question, with its accompanying code 
+Let's see how the models that we fitted in the previous exercise perform on the test set.
+
+**(a).** First, build the error components for each of the models that we trained in exercise 1. To do so, complete and run the code below:
 
 ```{r}
-# Example code for the question
-1 + 1
+#| eval: false
+
+# Day/Night
+day_night_model_errors <- 
+  test_sample_2013_2015 |>
+  select(attendance, predicted_attendance_daynight) |>
+  mutate(
+    error            = YOUR_CODE_HERE - YOUR_CODE_HERE,
+    abs_error        = abs(YOUR_CODE_HERE),
+    squared_error    = YOUR_CODE_HERE^2,
+    percentage_error = (YOUR_CODE_HERE / YOUR_CODE_HERE) * 100
+  )
+
+# dotw × D/N
+dotw_dn_model_errors <- 
+  test_sample_2013_2015 |>
+  select(attendance, predicted_attendance_dotw_dn) |>
+  mutate(
+    error            = YOUR_CODE_HERE - YOUR_CODE_HERE,
+    abs_error        = abs(YOUR_CODE_HERE),
+    squared_error    = YOUR_CODE_HERE^2,
+    percentage_error = (YOUR_CODE_HERE / YOUR_CODE_HERE) * 100
+  )
+
+# Opponent
+opp_model_errors <- 
+  test_sample_2013_2015 |>
+  select(attendance, predicted_attendance_opp) |>
+  mutate(
+    error            = YOUR_CODE_HERE - YOUR_CODE_HERE,
+    abs_error        = abs(YOUR_CODE_HERE),
+    squared_error    = YOUR_CODE_HERE^2,
+    percentage_error = (YOUR_CODE_HERE / YOUR_CODE_HERE) * 100
+  )
 ```
+
+**(b).** Next, complete and run the code below to calculate the following error metrics for each of the models:
+
+```{r}
+#| eval: false
+
+day_night_model_metrics <- 
+  YOUR_CODE_HERE |>
+  summarise(
+    MAE  = mean(YOUR_CODE_HERE, na.rm = TRUE),
+    RMSE = sqrt(mean(YOUR_CODE_HERE, na.rm = TRUE)),
+    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE)
+  )
+
+dotw_dn_model_metrics <- 
+  YOUR_CODE_HERE |>
+  summarise(
+    MAE  = mean(YOUR_CODE_HERE, na.rm = TRUE),
+    RMSE = sqrt(mean(YOUR_CODE_HERE, na.rm = TRUE)),
+    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE)
+  )
+
+opp_model_metrics <- 
+  YOUR_CODE_HERE |>
+  summarise(
+    MAE  = mean(YOUR_CODE_HERE, na.rm = TRUE),
+    RMSE = sqrt(mean(YOUR_CODE_HERE, na.rm = TRUE)),
+    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE)
+  )
+```
+
+**(c).** What does the code below 'do'? Why do we need to wrangle the metrics into this format? Finally, run the code below.
+
+```{r}
+#| eval: false
+
+day_night_model_metrics <-
+  day_night_model_metrics |>
+  mutate(model = "Day/Night")
+
+dotw_dn_model_metrics <-
+  dotw_dn_model_metrics |>
+  mutate(model = "dotw x D/N")
+
+opp_model_metrics <-
+  opp_model_metrics |>
+  mutate(model = "Opponent")
+
+simple_model_metrics <-
+  day_night_model_metrics |>
+  bind_rows(dotw_dn_model_metrics) |>
+  bind_rows(opp_model_metrics)
+
+simple_metrics_long <-
+  simple_model_metrics |>
+  pivot_longer(
+    cols = -model,
+    names_to = "metric",
+    values_to = "value"
+  )
+
+ggplot(simple_metrics_long, aes(x = model, y = value, fill = model)) +
+  geom_col() +
+  geom_text(aes(label = round(value, 0)), vjust = -0.5, size = 3) +
+  facet_wrap(~ metric, scales = "free_y") +
+  ggokabeito::scale_fill_okabe_ito() +
+  labs(
+    title = "Forecast Accuracy Metrics by Model",
+    x = "Model",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+**(d).** Based on the metrics and the plot above, which of the models performed best on the test set? How do these results compare to what you observed in the training set?
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -22,20 +135,40 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- XXXXX
+- Compute error components (error, |error|, error², % error) and aggregate MAE / RMSE / MAPE.
+- Reshape metrics for tidy comparison across models and visualize them.
+- Interpret out-of-sample vs in-sample results and relate to overfitting/generalization.
 
 ✅   **Core Concepts to Highlight**
 
-List them here
+Why these metrics?
+
+- MAE: average absolute miss—good for staffing buffers.
+
+- RMSE: penalizes large misses—sensitive to outliers.
+
+- MAPE: scale-free % miss—compare across scales (watch out for zeros).
+
+Tidy evaluation workflow: compute errors → summarise → label model → bind rows → pivot_longer() → ggplot.
+
+Out-of-sample honesty: models that look great in-sample may not win on test; simplicity can generalize better.
+
+Data leakage avoidance: all means and model fits must be from training only.
 
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-List as needed
+NA
 
 📌 **Common Misunderstandings**
 
-List as needed
+- Using test data to compute training means (leakage).
+
+- Referencing wrong columns in the error pipeline (e.g., mixing predicted columns between models).
+
+- MAPE with zeros (division by zero): highlight data context and why it’s safe/unsafe here.
+
+- Over-reading small differences: discuss practical significance for operations, not just statistical.
 
 :::
 
@@ -55,11 +188,122 @@ Solution
 
 ::: {.solution-block-body}
 
-Here’s the explanation and code:
+**(a). Code for calculating errors**
 
 ```{r}
-print("Hello, world!")
+day_night_model_errors <-
+  test_sample_2013_2015 |>
+  select(attendance, predicted_attendance_daynight) |>
+  mutate(
+    error            = attendance - predicted_attendance_daynight,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+dotw_dn_model_errors <-
+  test_sample_2013_2015 |>
+  select(attendance, predicted_attendance_dotw_dn) |>
+  mutate(
+    error            = attendance - predicted_attendance_dotw_dn,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
+
+opp_model_errors <-
+  test_sample_2013_2015 |>
+  select(attendance, predicted_attendance_opp) |>
+  mutate(
+    error            = attendance - predicted_attendance_opp,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  )
 ```
+
+**(b). Code for calculating error metrics**
+
+```{r}
+day_night_model_metrics <- 
+  day_night_model_errors |>
+  summarise(
+    MAE = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+
+dotw_dn_model_metrics <- 
+  dotw_dn_model_errors |>
+  summarise(
+    MAE = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+
+opp_model_metrics <- 
+  opp_model_errors |>
+  summarise(
+    MAE = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+  )
+```
+
+**(c). Explanation of the code**
+
+```{r}
+day_night_model_metrics <-
+  day_night_model_metrics |>
+  mutate(model = "Day/Night")
+
+dotw_dn_model_metrics <-
+  dotw_dn_model_metrics |>
+  mutate(model = "dotw x D/N")
+
+opp_model_metrics <-
+  opp_model_metrics |>
+  mutate(model = "Opponent")
+
+simple_model_metrics <-
+  day_night_model_metrics |>
+  bind_rows(dotw_dn_model_metrics) |>
+  bind_rows(opp_model_metrics)
+
+simple_metrics_long <-
+  simple_model_metrics |>
+  pivot_longer(
+    cols = -model,
+    names_to = "metric",
+    values_to = "value"
+  )
+
+ggplot(simple_metrics_long, aes(x = model, y = value, fill = model)) +
+  geom_col() +
+  geom_text(aes(label = round(value, 0)), vjust = -0.5, size = 3) +
+  facet_wrap(~ metric, scales = "free_y") +
+  ggokabeito::scale_fill_okabe_ito() +
+  labs(
+    title = "Forecast Accuracy Metrics by Model",
+    x = "Model",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+It labels each metrics tibble with a model name, stacks them, pivots from wide (MAE, RMSE, MAPE) to long (metric, value), and then plots a faceted bar chart.
+We reshape to long because ggplot prefers tidy data: one row per (model, metric) pair, enabling easy faceting and scalable comparisons.
+
+**(d). Model performance comparison**
+
+On the out-of-sample test set, Day/Night has the lowest MAE and RMSE (~2,458), with dotw × D/N essentially tied; Opponent is modestly worse. MAPE is ≈5% for all three, so differences are small but consistent. While the models perform similarly, the bottom line is that Day/Night (or dotw × D/N) is the best, while Opponent lags.
+
+More complexity didn’t help here: adding dotw to Day/Night adds little, and the Opponent split likely introduces mild overfitting (many sparse cells from games against opponents that the Red Sox play infrequently). Operationally, we prefer the simplest model that meets the target accuracy (Day/Night).
+
+
 :::
 
 :::
