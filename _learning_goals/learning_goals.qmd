@@ -6,6 +6,6 @@ By the end of this tutorial, you should be able to:
 - Explore how attendance varies with game time (day/night) and opponent using tidy plots.
 - Build time-based train/test splits and create cell-means predictors on the training set.
 - Evaluate forecasts on the test set using MAE, RMSE, MAPE.
-- Fit and compare linear models (Basic OLS, Quadratic in game number, Degree-8 polynomial) and relate fit vs. generalisation.
+- Fit and compare regression models (Basic OLS, Quadratic in game number, Degree-8 polynomial) and relate fit vs. generalisation.
 - Connect forecast accuracy to operational planning decisions.
 :::

@@ -1,8 +1,10 @@
 project:
   render:
-    - tutorial.qmd
-title: 'Tutorial 11: Predictive Analytics for Workforce Planning'
+    - tutorial-predictive.qmd
+# BEGIN STUDENT HEADER
+title: 'Tutorial 9: Predictive Analytics for Workforce Planning'
+# END STUDENT HEADER
 format:
   html:
-    output-file: "tutorial-r-questions"
+    output-file: "tutorial-9-questions"
     output-ext:  "html"

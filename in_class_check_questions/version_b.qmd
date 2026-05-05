@@ -1,0 +1,107 @@
+---
+title: "Tutorial 11 In-Class Check - Version B"
+format:
+  html:
+    embed-resources: true
+---
+
+## Instructions
+
+Answer all five questions.
+
+Select the best answer in each case.
+
+### Question 1
+
+Which set of predictors is available before a game and therefore suitable for advance concession staffing?
+
+A. Final attendance, total sales, and realised queue length.
+
+B. Day/night, day of week, and opponent.
+
+C. Forecast error, absolute error, and squared error.
+
+D. Test-set attendance, RMSE, and MAPE.
+
+### Question 2
+
+What problem can occur if a model is evaluated on the same data used to calculate its predictions?
+
+A. The model may look accurate because it has learned training-specific noise rather than patterns that generalise.
+
+B. The model cannot produce any predictions.
+
+C. The training set becomes larger than the original dataset.
+
+D. The attendance variable is automatically converted to text.
+
+### Question 3
+
+In the tutorial, the opponent model groups the training data by `opp`.
+
+Why might this model be noisier than the day/night model?
+
+A. Opponent is not known before the game.
+
+B. It creates more, smaller groups, so some averages may be based on fewer games.
+
+C. It cannot be joined to the test set.
+
+D. It always has the same prediction for every game.
+
+### Question 4
+
+Consider the code below:
+
+```{r}
+#| eval: false
+simple_model_errors <- 
+  test_sample_2013_2015 |>
+  select(attendance, starts_with("predicted_attendance_")) |>
+  pivot_longer(
+    cols = starts_with("predicted_attendance_"),
+    names_to = "model",
+    values_to = "predicted_attendance"
+  )
+```
+
+What does `pivot_longer()` do here?
+
+A. It stacks the prediction columns into one prediction column and records the model name in another column.
+
+B. It splits the test set into earlier and later seasons.
+
+C. It calculates MAE, RMSE, and MAPE automatically.
+
+D. It removes games with missing attendance.
+
+### Question 5
+
+Which statement best describes RMSE?
+
+A. It is the mean of absolute percentage errors.
+
+B. It is measured in model names rather than attendance units.
+
+C. It is more sensitive to occasional large misses because errors are squared before averaging.
+
+D. It is the only metric that can be used with a train/test split.
+
+::: {.callout-tip collapse="true"}
+## Solution Key
+
+1. **B**
+   Day/night, day of week, and opponent are known ahead of the game, unlike realised outcomes such as attendance or sales.
+
+2. **A**
+   Training-set performance can be overly optimistic because the model may fit idiosyncratic training variation.
+
+3. **B**
+   More granular cells can create smaller groups, which makes the training-set averages more sensitive to noise.
+
+4. **A**
+   `pivot_longer()` converts several prediction columns into a tidy long format with one row per game-model combination.
+
+5. **C**
+   RMSE squares errors, so large misses receive extra weight before the square root returns the metric to attendance units.
+:::

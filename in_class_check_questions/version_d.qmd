@@ -1,0 +1,113 @@
+---
+title: "Tutorial 11 In-Class Check - Version D"
+format:
+  html:
+    embed-resources: true
+---
+
+## Instructions
+
+Answer all five questions.
+
+Select the best answer in each case.
+
+### Question 1
+
+What is the main purpose of a training/test split in this forecasting tutorial?
+
+A. To build predictions on past games and check whether they work on later games not used to create the model.
+
+B. To make the data easier to print.
+
+C. To guarantee that every forecast error equals zero.
+
+D. To remove the business need for staffing buffers.
+
+### Question 2
+
+Which statement best describes a cell-means forecast?
+
+A. It predicts future observations using the average outcome within a relevant training-data group.
+
+B. It predicts attendance using only the row number in the test set.
+
+C. It fits a separate polynomial for every game.
+
+D. It replaces all missing values with the overall test-set mean.
+
+### Question 3
+
+Suppose day/night has only a modest difference in average attendance, while opponent has larger differences across teams.
+
+Why should a student still be cautious about assuming the opponent model will perform best on future games?
+
+A. Large training differences may reflect noisy small groups and may not generalise well.
+
+B. Opponent cannot be observed before the game.
+
+C. Test-set metrics are never needed for opponent models.
+
+D. Opponent models do not use attendance.
+
+### Question 4
+
+Which code correctly calculates absolute error after `error` has been created?
+
+A.
+
+```{r}
+#| eval: false
+abs_error = abs(error)
+```
+
+B.
+
+```{r}
+#| eval: false
+abs_error = mean(attendance)
+```
+
+C.
+
+```{r}
+#| eval: false
+abs_error = error ^ 2
+```
+
+D.
+
+```{r}
+#| eval: false
+abs_error = predicted_attendance / attendance
+```
+
+### Question 5
+
+What does MAPE add to the model comparison?
+
+A. It expresses typical absolute forecast error as a percentage of actual attendance.
+
+B. It identifies which games belong in the training set.
+
+C. It replaces the need for predictions.
+
+D. It counts how many opponents appear in the data.
+
+::: {.callout-tip collapse="true"}
+## Solution Key
+
+1. **A**
+   The split lets students build models from earlier seasons and evaluate forecasts on later seasons the model did not use.
+
+2. **A**
+   A cell-means model uses training averages within groups such as day/night, day of week x day/night, or opponent.
+
+3. **A**
+   A feature can look useful in the training data but fail to generalise if detailed groups are based on limited observations.
+
+4. **A**
+   Absolute error is the magnitude of the forecast error, ignoring whether the prediction was too high or too low.
+
+5. **A**
+   MAPE reports absolute error relative to actual attendance, making errors easier to interpret as percentages.
+:::

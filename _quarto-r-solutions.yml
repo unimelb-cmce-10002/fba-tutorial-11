@@ -1,8 +1,8 @@
 project:
   render:
-    - tutorial.qmd
-title: 'Tutorial 11: Predictive Analytics for Workforce Planning - Solutions'
+    - tutorial-predictive.qmd
+title: 'Tutorial 9: Predictive Analytics for Workforce Planning - Solutions'
 format:
   html:
-    output-file: "tutorial-r-solutions"
+    output-file: "tutorial-9-solutions"
     output-ext:  "html"

@@ -1,0 +1,116 @@
+---
+title: "Tutorial 11 In-Class Check - Version A"
+format:
+  html:
+    embed-resources: true
+---
+
+## Instructions
+
+Answer all five questions.
+
+Select the best answer in each case.
+
+### Question 1
+
+The concessions manager needs to roster staff before the previous game has been played.
+
+Why is a lag-1 attendance model less useful for this operational decision?
+
+A. It can only be used when attendance is measured as a percentage.
+
+B. It relies on information from the previous game, which may not yet be available when rosters must be set.
+
+C. It always overfits more than an opponent-based model.
+
+D. It cannot be evaluated with MAE, RMSE, or MAPE.
+
+### Question 2
+
+The tutorial splits the data so games before 2013 are used for training and games from 2013 onward are used for testing.
+
+What is the best reason for using this time-based split?
+
+A. It mirrors using past games to forecast future games.
+
+B. It guarantees the same number of day and night games in each sample.
+
+C. It removes the need to calculate test-set errors.
+
+D. It ensures every opponent appears exactly once.
+
+### Question 3
+
+Consider the code below:
+
+```{r}
+#| eval: false
+average_attendance_by_daynight <- 
+  training_sample_2005_2012 |>
+  group_by(day_night) |>
+  summarise(
+    ave_attendance = mean(attendance, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+What kind of model is this creating?
+
+A. A cell-means model that predicts using the average attendance for day and night games in the training set.
+
+B. A regression model with a degree-8 polynomial.
+
+C. A random train/test split.
+
+D. A model that uses the test-set average as the prediction.
+
+### Question 4
+
+A student joins the day/night training means to the test set using:
+
+```{r}
+#| eval: false
+test_sample_2013_2015 |>
+  left_join(average_attendance_by_daynight, by = "day_night")
+```
+
+What is the purpose of this join?
+
+A. To remove all games that were played at night.
+
+B. To attach the relevant training-set average attendance to each test-set game as a prediction.
+
+C. To calculate RMSE directly.
+
+D. To randomly assign games to training and test samples.
+
+### Question 5
+
+Which forecast accuracy metric is most directly useful for thinking about a staffing buffer because it is measured in fans?
+
+A. MAPE
+
+B. RMSE
+
+C. MAE
+
+D. R-squared
+
+::: {.callout-tip collapse="true"}
+## Solution Key
+
+1. **B**
+   Lag-1 attendance may be informative, but it depends on the previous game's attendance and may arrive too late for advance roster planning.
+
+2. **A**
+   A time-based split fits on earlier seasons and evaluates on later seasons, which matches the forecasting problem.
+
+3. **A**
+   The code calculates training-set averages by `day_night`, so future day and night games can be assigned those group averages.
+
+4. **B**
+   The join matches each test game to the appropriate training-set day/night average, turning the mean into a prediction.
+
+5. **C**
+   MAE is an average absolute error in the original attendance units, so it translates naturally into a staffing buffer.
+:::

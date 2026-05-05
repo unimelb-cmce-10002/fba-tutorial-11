@@ -1,103 +1,69 @@
 <!-- question-type: prepare -->
-### Exercise 2: Evaluating model performance in the test set
+### Exercise 2: Evaluating advance predictors in the test set
 
-Let's see how the models that we fitted in the previous exercise perform on the test set.
+The lecture introduced MAE, RMSE, and MAPE. Rather than rebuild the same error pipeline three separate times, we will use one tidy workflow to compare all three advance-predictor models from Exercise 1.
 
-**(a).** First, build the error components for each of the models that we trained in exercise 1. To do so, complete and run the code below:
+**(a).** Run the code below to put the three prediction columns into a long format. Before doing so complete the missing lines that calculate forecast errors.
 
 ```{r}
 #| eval: false
 
-# Day/Night
-day_night_model_errors <- 
+simple_model_errors <- 
   test_sample_2013_2015 |>
-  select(attendance, predicted_attendance_daynight) |>
+  select(
+    attendance,
+    predicted_attendance_daynight,
+    predicted_attendance_dotw_dn,
+    predicted_attendance_opp
+  ) |>
+  pivot_longer(
+    cols = starts_with("predicted_attendance_"),
+    names_to = "model",
+    values_to = "predicted_attendance"
+  ) |>
   mutate(
+    model = recode(
+      model,
+      predicted_attendance_daynight = "Day/Night",
+      predicted_attendance_dotw_dn = "Day of week x Day/Night",
+      predicted_attendance_opp = "Opponent"
+    ),
     error            = YOUR_CODE_HERE - YOUR_CODE_HERE,
     abs_error        = abs(YOUR_CODE_HERE),
-    squared_error    = YOUR_CODE_HERE^2,
-    percentage_error = (YOUR_CODE_HERE / YOUR_CODE_HERE) * 100
-  )
-
-# dotw × D/N
-dotw_dn_model_errors <- 
-  test_sample_2013_2015 |>
-  select(attendance, predicted_attendance_dotw_dn) |>
-  mutate(
-    error            = YOUR_CODE_HERE - YOUR_CODE_HERE,
-    abs_error        = abs(YOUR_CODE_HERE),
-    squared_error    = YOUR_CODE_HERE^2,
-    percentage_error = (YOUR_CODE_HERE / YOUR_CODE_HERE) * 100
-  )
-
-# Opponent
-opp_model_errors <- 
-  test_sample_2013_2015 |>
-  select(attendance, predicted_attendance_opp) |>
-  mutate(
-    error            = YOUR_CODE_HERE - YOUR_CODE_HERE,
-    abs_error        = abs(YOUR_CODE_HERE),
-    squared_error    = YOUR_CODE_HERE^2,
+    squared_error    = YOUR_CODE_HERE ^ 2,
     percentage_error = (YOUR_CODE_HERE / YOUR_CODE_HERE) * 100
   )
 ```
 
-**(b).** Next, complete and run the code below to calculate the following error metrics for each of the models:
+What does `pivot_longer()` do here, and why is it helpful when we want to compare several models?
+
+**(b).** Complete and run the code below to calculate MAE, RMSE, and MAPE for each model.
 
 ```{r}
 #| eval: false
 
-day_night_model_metrics <- 
-  YOUR_CODE_HERE |>
+simple_model_metrics <- 
+  simple_model_errors |>
+  group_by(model) |>
   summarise(
     MAE  = mean(YOUR_CODE_HERE, na.rm = TRUE),
     RMSE = sqrt(mean(YOUR_CODE_HERE, na.rm = TRUE)),
-    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE)
-  )
-
-dotw_dn_model_metrics <- 
-  YOUR_CODE_HERE |>
-  summarise(
-    MAE  = mean(YOUR_CODE_HERE, na.rm = TRUE),
-    RMSE = sqrt(mean(YOUR_CODE_HERE, na.rm = TRUE)),
-    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE)
-  )
-
-opp_model_metrics <- 
-  YOUR_CODE_HERE |>
-  summarise(
-    MAE  = mean(YOUR_CODE_HERE, na.rm = TRUE),
-    RMSE = sqrt(mean(YOUR_CODE_HERE, na.rm = TRUE)),
-    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE)
+    MAPE = mean(abs(YOUR_CODE_HERE), na.rm = TRUE),
+    .groups = "drop"
   )
 ```
 
-**(c).** What does the code below 'do'? Why do we need to wrangle the metrics into this format? Finally, run the code below.
+Which metric is most directly useful for setting a staffing buffer? Which metric is most sensitive to occasional large misses?
+
+**(c).** Run the code below to plot the metrics.
 
 ```{r}
 #| eval: false
-
-day_night_model_metrics <-
-  day_night_model_metrics |>
-  mutate(model = "Day/Night")
-
-dotw_dn_model_metrics <-
-  dotw_dn_model_metrics |>
-  mutate(model = "dotw x D/N")
-
-opp_model_metrics <-
-  opp_model_metrics |>
-  mutate(model = "Opponent")
-
-simple_model_metrics <-
-  day_night_model_metrics |>
-  bind_rows(dotw_dn_model_metrics) |>
-  bind_rows(opp_model_metrics)
 
 simple_metrics_long <-
   simple_model_metrics |>
   pivot_longer(
-    cols = -model,
+    cols = c(MAE, RMSE, MAPE),
     names_to = "metric",
     values_to = "value"
   )
@@ -119,7 +85,13 @@ ggplot(simple_metrics_long, aes(x = model, y = value, fill = model)) +
   )
 ```
 
-**(d).** Based on the metrics and the plot above, which of the models performed best on the test set? How do these results compare to what you observed in the training set?
+**(d).** Based on the table and plot, choose one model for a concessions staffing manager. In your answer, consider:
+
+- test-set accuracy
+- whether the predictor is available early enough for rostering
+- whether the model is simple enough to explain
+- whether the accuracy differences are large enough to matter operationally
+
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
 ::: {.content-visible when-profile="r-teaching-guide"}
@@ -135,40 +107,31 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- Compute error components (error, |error|, error², % error) and aggregate MAE / RMSE / MAPE.
-- Reshape metrics for tidy comparison across models and visualize them.
-- Interpret out-of-sample vs in-sample results and relate to overfitting/generalization.
+- Apply MAE, RMSE, and MAPE from the lecture to forward-looking tutorial predictors.
+- Use one tidy comparison workflow rather than repeated model-specific error code.
+- Interpret test-set performance in light of operational usefulness, not just numerical ranking.
+- Connect forecast error magnitudes to staffing buffers and service-risk tradeoffs.
 
 ✅   **Core Concepts to Highlight**
 
-Why these metrics?
-
-- MAE: average absolute miss—good for staffing buffers.
-
-- RMSE: penalizes large misses—sensitive to outliers.
-
-- MAPE: scale-free % miss—compare across scales (watch out for zeros).
-
-Tidy evaluation workflow: compute errors → summarise → label model → bind rows → pivot_longer() → ggplot.
-
-Out-of-sample honesty: models that look great in-sample may not win on test; simplicity can generalize better.
-
-Data leakage avoidance: all means and model fits must be from training only.
-
+- The lecture already introduced the metric formulas; the tutorial applies them to models that can be used before the game.
+- Long format creates one row per model prediction, so one grouped summary compares every model.
+- MAE is the most intuitive staffing-buffer metric; RMSE highlights models with occasional large misses.
+- Small metric differences may not justify a more complex or less explainable model.
+- The operational question is not "Which model wins by one decimal point?" but "Which model is accurate enough, early enough, and explainable enough?"
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-NA
+- "If MAE is about 2,500 fans, how might that affect the staffing buffer?"
+- "Would you choose a model with slightly worse MAE if managers trusted it more?"
+- "What would make an opponent-based model risky for future seasons?"
 
 📌 **Common Misunderstandings**
 
-- Using test data to compute training means (leakage).
-
-- Referencing wrong columns in the error pipeline (e.g., mixing predicted columns between models).
-
-- MAPE with zeros (division by zero): highlight data context and why it’s safe/unsafe here.
-
-- Over-reading small differences: discuss practical significance for operations, not just statistical.
+- Treating percentage error and absolute error as interchangeable.
+- Thinking the lowest metric always determines the business decision.
+- Forgetting that all predictions must be formed from training-set means.
+- Over-reading small differences between models that are operationally similar.
 
 :::
 
@@ -188,92 +151,61 @@ Solution
 
 ::: {.solution-block-body}
 
-**(a). Code for calculating errors**
+**(a). Build one long error table**
 
 ```{r}
-day_night_model_errors <-
+simple_model_errors <- 
   test_sample_2013_2015 |>
-  select(attendance, predicted_attendance_daynight) |>
+  select(
+    attendance,
+    predicted_attendance_daynight,
+    predicted_attendance_dotw_dn,
+    predicted_attendance_opp
+  ) |>
+  pivot_longer(
+    cols = starts_with("predicted_attendance_"),
+    names_to = "model",
+    values_to = "predicted_attendance"
+  ) |>
   mutate(
-    error            = attendance - predicted_attendance_daynight,
-    abs_error        = abs(error),
-    squared_error    = error ^ 2,
-    percentage_error = (error / attendance) * 100
-  )
-
-dotw_dn_model_errors <-
-  test_sample_2013_2015 |>
-  select(attendance, predicted_attendance_dotw_dn) |>
-  mutate(
-    error            = attendance - predicted_attendance_dotw_dn,
-    abs_error        = abs(error),
-    squared_error    = error ^ 2,
-    percentage_error = (error / attendance) * 100
-  )
-
-opp_model_errors <-
-  test_sample_2013_2015 |>
-  select(attendance, predicted_attendance_opp) |>
-  mutate(
-    error            = attendance - predicted_attendance_opp,
+    model = recode(
+      model,
+      predicted_attendance_daynight = "Day/Night",
+      predicted_attendance_dotw_dn = "Day of week x Day/Night",
+      predicted_attendance_opp = "Opponent"
+    ),
+    error            = attendance - predicted_attendance,
     abs_error        = abs(error),
     squared_error    = error ^ 2,
     percentage_error = (error / attendance) * 100
   )
 ```
 
-**(b). Code for calculating error metrics**
+`pivot_longer()` stacks the three prediction columns into one `predicted_attendance` column and records the model name in a separate `model` column. This lets us calculate errors and metrics once, then compare models with `group_by(model)`.
+
+**(b). Summarise model accuracy**
 
 ```{r}
-day_night_model_metrics <- 
-  day_night_model_errors |>
+simple_model_metrics <- 
+  simple_model_errors |>
+  group_by(model) |>
   summarise(
-    MAE = mean(abs_error, na.rm = TRUE),
+    MAE  = mean(abs_error, na.rm = TRUE),
     RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
-    MAPE = mean(abs(percentage_error), na.rm = TRUE)
-  )
-
-dotw_dn_model_metrics <- 
-  dotw_dn_model_errors |>
-  summarise(
-    MAE = mean(abs_error, na.rm = TRUE),
-    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
-    MAPE = mean(abs(percentage_error), na.rm = TRUE)
-  )
-
-opp_model_metrics <- 
-  opp_model_errors |>
-  summarise(
-    MAE = mean(abs_error, na.rm = TRUE),
-    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
-    MAPE = mean(abs(percentage_error), na.rm = TRUE)
+    MAPE = mean(abs(percentage_error), na.rm = TRUE),
+    .groups = "drop"
   )
 ```
 
-**(c). Explanation of the code**
+MAE is most directly useful for staffing buffers because it is measured in fans. RMSE is most sensitive to occasional large misses because it squares errors before averaging them.
+
+**(c). Plot the metrics**
 
 ```{r}
-day_night_model_metrics <-
-  day_night_model_metrics |>
-  mutate(model = "Day/Night")
-
-dotw_dn_model_metrics <-
-  dotw_dn_model_metrics |>
-  mutate(model = "dotw x D/N")
-
-opp_model_metrics <-
-  opp_model_metrics |>
-  mutate(model = "Opponent")
-
-simple_model_metrics <-
-  day_night_model_metrics |>
-  bind_rows(dotw_dn_model_metrics) |>
-  bind_rows(opp_model_metrics)
-
 simple_metrics_long <-
   simple_model_metrics |>
   pivot_longer(
-    cols = -model,
+    cols = c(MAE, RMSE, MAPE),
     names_to = "metric",
     values_to = "value"
   )
@@ -294,15 +226,14 @@ ggplot(simple_metrics_long, aes(x = model, y = value, fill = model)) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 ```
-It labels each metrics tibble with a model name, stacks them, pivots from wide (MAE, RMSE, MAPE) to long (metric, value), and then plots a faceted bar chart.
-We reshape to long because ggplot prefers tidy data: one row per (model, metric) pair, enabling easy faceting and scalable comparisons.
 
-**(d). Model performance comparison**
+**(d). Model performance and operational recommendation**
 
-On the out-of-sample test set, Day/Night has the lowest MAE and RMSE (~2,458), with dotw × D/N essentially tied; Opponent is modestly worse. MAPE is ≈5% for all three, so differences are small but consistent. While the models perform similarly, the bottom line is that Day/Night (or dotw × D/N) is the best, while Opponent lags.
+On the out-of-sample test set, Day/Night has the lowest MAE and RMSE, with Day of week x Day/Night essentially tied. Opponent is modestly worse. MAPE is about 5% for all three models, so the differences are real but not huge.
 
-More complexity didn’t help here: adding dotw to Day/Night adds little, and the Opponent split likely introduces mild overfitting (many sparse cells from games against opponents that the Red Sox play infrequently). Operationally, we prefer the simplest model that meets the target accuracy (Day/Night).
+For a concessions staffing manager, Day/Night is a strong default recommendation: it is available well in advance, easy to explain, and performs at least as well as the richer alternatives here. Day of week x Day/Night is also defensible if managers want slightly more schedule detail. The opponent model is less attractive because it is more granular and may rely on noisier training averages for opponents that appear infrequently.
 
+The decision should not be based only on the lowest metric. The practical question is whether a model is accurate enough, early enough, and explainable enough to support roster planning.
 
 :::
 

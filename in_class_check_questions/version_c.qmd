@@ -1,0 +1,124 @@
+---
+title: "Tutorial 11 In-Class Check - Version C"
+format:
+  html:
+    embed-resources: true
+---
+
+## Instructions
+
+Answer all five questions.
+
+Select the best answer in each case.
+
+### Question 1
+
+Why does the tutorial focus on predictors known before the game?
+
+A. Because the business decision is made before game-day attendance is observed.
+
+B. Because future information always makes models less accurate.
+
+C. Because test-set data cannot contain calendar variables.
+
+D. Because day/night is the only variable in the dataset.
+
+### Question 2
+
+Which code correctly creates the training sample used in the preparation exercise?
+
+A.
+
+```{r}
+#| eval: false
+bos_2005_2015_fenway |>
+  filter(year < 2013)
+```
+
+B.
+
+```{r}
+#| eval: false
+bos_2005_2015_fenway |>
+  filter(year >= 2013)
+```
+
+C.
+
+```{r}
+#| eval: false
+bos_2005_2015_fenway |>
+  group_by(year < 2013)
+```
+
+D.
+
+```{r}
+#| eval: false
+bos_2005_2015_fenway |>
+  summarise(year < 2013)
+```
+
+### Question 3
+
+A student calculates average attendance by `dotw` and `day_night` in the training data.
+
+What must they join on when attaching these predictions to the test set?
+
+A. Only `attendance`.
+
+B. Only `year`.
+
+C. Both `dotw` and `day_night`.
+
+D. Both `MAE` and `RMSE`.
+
+### Question 4
+
+In the error table, the tutorial uses:
+
+```{r}
+#| eval: false
+error = attendance - predicted_attendance
+```
+
+What does this value represent?
+
+A. The amount by which actual attendance differs from the model prediction for a game.
+
+B. The number of games in each group.
+
+C. The average attendance in the training set.
+
+D. The percentage of games played at night.
+
+### Question 5
+
+Which recommendation best reflects the tutorial's model-choice logic for a staffing manager?
+
+A. Always choose the most granular model, because more groups always generalise better.
+
+B. Choose a model by considering test-set accuracy, timing, explainability, and whether metric differences matter operationally.
+
+C. Choose the model with the highest training-set average attendance.
+
+D. Ignore MAE if RMSE has already been calculated.
+
+::: {.callout-tip collapse="true"}
+## Solution Key
+
+1. **A**
+   Rosters are set before realised attendance is known, so the inputs must be available in advance.
+
+2. **A**
+   The training sample uses earlier seasons, so the correct filter is `year < 2013`.
+
+3. **C**
+   A two-way cell-means model needs both keys; joining on only one would attach the wrong averages.
+
+4. **A**
+   Forecast error is actual attendance minus predicted attendance for each test-set game.
+
+5. **B**
+   The tutorial frames model choice as an operational decision, not just a search for the most complex model or one metric.
+:::

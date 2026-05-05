@@ -1,0 +1,340 @@
+<!-- question-type: inclass -->
+### Exercise 5: Choosing and using a staffing forecast
+
+The final decision is not just "which OLS model won?" We also have the simple cell-means models from Exercise 2. Before comparing them, we need to check that the models were evaluated on the same games.
+
+**(a).** In Exercise 2, the simple cell-means models were evaluated on `test_sample_2013_2015`. In Exercise 4, the OLS models were evaluated on `safe_test_sample`.
+
+Run the code below to compare the two samples.
+
+```{r}
+#| eval: false
+
+tibble(
+  sample = c("Full test sample", "OLS-safe test sample"),
+  n_games = c(
+    nrow(test_sample_2013_2015),
+    nrow(safe_test_sample)
+  )
+)
+
+test_sample_2013_2015 |>
+  filter(!(opp %in% known_opp_levels)) |>
+  count(opp, sort = TRUE)
+```
+
+What is the sample mismatch?
+
+**(b).** The table below fixes the sample mismatch from part (a). It compares the best simple cell-means model with the best OLS model, using only the same OLS-safe test rows.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+training_sample_2005_2012 <- 
+  bos_2005_2015_fenway |>
+  filter(year < 2013)
+
+test_sample_2013_2015 <- 
+  bos_2005_2015_fenway |>
+  filter(year >= 2013)
+
+average_attendance_by_daynight <- 
+  training_sample_2005_2012 |>
+  group_by(day_night) |>
+  summarise(
+    ave_attendance = mean(attendance, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+average_attendance_by_dotw_dn <- 
+  training_sample_2005_2012 |>
+  group_by(dotw, day_night) |>
+  summarise(
+    ave_attendance = mean(attendance, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+average_attendance_by_opp <- 
+  training_sample_2005_2012 |>
+  group_by(opp) |>
+  summarise(
+    ave_attendance = mean(attendance, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+test_sample_2013_2015 <- 
+  test_sample_2013_2015 |>
+  left_join(average_attendance_by_daynight, by = "day_night") |>
+  rename(predicted_attendance_daynight = ave_attendance) |>
+  left_join(average_attendance_by_dotw_dn, by = c("dotw", "day_night")) |>
+  rename(predicted_attendance_dotw_dn = ave_attendance) |>
+  left_join(average_attendance_by_opp, by = "opp") |>
+  rename(predicted_attendance_opp = ave_attendance)
+
+basic_ols_model <- 
+  lm(attendance ~ opp + day_night + dotw,
+     data = training_sample_2005_2012
+  )
+
+non_linear_ols_model <- 
+  lm(attendance ~ gm + I(gm^2), 
+     data = training_sample_2005_2012
+  )
+
+eighth_poly_ols_model <- 
+  lm(attendance ~ opp + day_night + dotw + gm + I(gm^2) + 
+     I(gm^3) + I(gm^4) + I(gm^5) + I(gm^6) + I(gm^7) + I(gm^8),
+     data = training_sample_2005_2012
+  )
+
+known_opp_levels <- 
+  training_sample_2005_2012 |> 
+  pull(opp) |> 
+  unique()
+
+safe_test_sample <- 
+  test_sample_2013_2015 |>
+  filter(opp %in% known_opp_levels)
+
+safe_test_sample <- 
+  safe_test_sample |>
+  mutate(
+    predicted_attendance_basic_OLS =
+      predict(basic_ols_model, newdata = safe_test_sample),
+    predicted_attendance_non_linear_OLS =
+      predict(non_linear_ols_model, newdata = safe_test_sample),
+    predicted_attendance_eighth_poly_OLS =
+      predict(eighth_poly_ols_model, newdata = safe_test_sample)
+  )
+
+comparable_simple_model_metrics <- 
+  safe_test_sample |>
+  select(
+    attendance,
+    predicted_attendance_daynight,
+    predicted_attendance_dotw_dn,
+    predicted_attendance_opp
+  ) |>
+  pivot_longer(
+    cols = starts_with("predicted_attendance_"),
+    names_to = "model",
+    values_to = "predicted_attendance"
+  ) |>
+  mutate(
+    model = recode(
+      model,
+      predicted_attendance_daynight = "Day/Night",
+      predicted_attendance_dotw_dn = "Day of week x Day/Night",
+      predicted_attendance_opp = "Opponent"
+    ),
+    error            = attendance - predicted_attendance,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  ) |>
+  group_by(model) |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+ols_model_metrics <- 
+  safe_test_sample |>
+  select(
+    attendance,
+    predicted_attendance_basic_OLS,
+    predicted_attendance_non_linear_OLS,
+    predicted_attendance_eighth_poly_OLS
+  ) |>
+  pivot_longer(
+    cols = starts_with("predicted_attendance_"),
+    names_to = "model",
+    values_to = "predicted_attendance"
+  ) |>
+  mutate(
+    model = recode(
+      model,
+      predicted_attendance_basic_OLS = "Basic OLS",
+      predicted_attendance_non_linear_OLS = "Quadratic game number",
+      predicted_attendance_eighth_poly_OLS = "Degree-8 polynomial OLS"
+    ),
+    error            = attendance - predicted_attendance,
+    abs_error        = abs(error),
+    squared_error    = error ^ 2,
+    percentage_error = (error / attendance) * 100
+  ) |>
+  group_by(model) |>
+  summarise(
+    MAE  = mean(abs_error, na.rm = TRUE),
+    RMSE = sqrt(mean(squared_error, na.rm = TRUE)),
+    MAPE = mean(abs(percentage_error), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+best_simple_model <-
+  comparable_simple_model_metrics |>
+  arrange(MAE) |>
+  slice(1) |>
+  mutate(model_family = "Cell-means")
+
+best_ols_model <-
+  ols_model_metrics |>
+  arrange(MAE) |>
+  slice(1) |>
+  mutate(model_family = "OLS")
+
+best_model_comparison <-
+  best_simple_model |>
+  bind_rows(best_ols_model) |>
+  select(model_family, model, MAE, RMSE, MAPE)
+
+best_model_comparison_display <-
+  best_model_comparison |>
+  transmute(
+    `Model family` = model_family,
+    `Best model in family` = model,
+    `MAE (fans)` = format(round(MAE, 1), nsmall = 1),
+    `RMSE (fans)` = format(round(RMSE, 1), nsmall = 1),
+    `MAPE (%)` = format(round(MAPE, 1), nsmall = 1)
+  )
+
+knitr::kable(
+  best_model_comparison_display,
+  caption = "Best cell-means model versus best OLS model on the same OLS-safe test rows"
+)
+```
+
+What does this table compare? Why is this comparison fair, while a direct comparison between `simple_model_metrics` from Exercise 2 and `ols_model_metrics` from Exercise 4 was not fair?
+
+**(c).** Interpret the table in part (b).
+
+Which model has the lower MAE on the same test rows? Is the difference large enough to matter for a concessions staffing decision? Would RMSE or MAPE change your conclusion?
+
+**(d).** Recommend a model and explain how the manager should use it.
+
+In your answer, include:
+
+- which model you choose
+- the evidence from the same-sample metrics
+- why the extra complexity is or is not worth it
+- how the forecast becomes a baseline roster
+- how MAE would be used as a staffing buffer and monitored over time
+
+**(e).** A good working model still needs maintenance. Explain when and why the manager should update or replace the model.
+
+In your answer, consider:
+
+- what the manager should monitor over time
+- what changes might make the model stale
+- how a major change in the environment could affect forecast accuracy
+
+
+<!-- BEGIN PROFILE:r-teaching-guide -->
+::: {.content-visible when-profile="r-teaching-guide"}
+
+::: {.teaching-block}
+
+::: {.teaching-block-header}
+Teaching Note
+:::
+
+::: {.teaching-block-body}
+
+🎯 **Learning Objective** 
+Students should:
+
+- Diagnose why two model families cannot be compared directly when evaluated on different test rows.
+- Explain why the final model comparison uses the same test rows.
+- Choose a staffing model using same-sample metrics and practical usefulness.
+- Explain how the chosen forecast would support roster planning and future monitoring.
+
+✅   **Core Concepts to Highlight**
+
+- Direct model comparisons require the same test rows.
+- Here, `safe_test_sample` drops Houston games because Houston is unseen in training.
+- A small MAE gain may not justify a more complex model.
+- The final table compares the best model from each family after fixing the sample mismatch.
+- A forecast becomes useful only when translated into rosters, buffers, and monitoring.
+- Models should be updated when the operating environment changes or errors drift upward.
+
+💬 **Suggested In-Class Prompts** (if needed)
+
+- "If two MAEs differ by only a few dozen fans, would that change the roster?"
+- "Which model would a concessions manager trust after five minutes of explanation?"
+- "What service-rate assumption would you need to turn attendance into staff numbers?"
+- "What would make old attendance patterns less useful?"
+
+📌 **Common Misunderstandings**
+
+- Comparing `simple_model_metrics` directly with `ols_model_metrics` without noticing the sample mismatch.
+- Treating the lowest MAE as automatically best when the difference is operationally trivial.
+- Forgetting that all predictors must be known before rosters are set.
+- Treating MAE as the exact number of extra fans every game rather than a typical absolute miss.
+- Assuming a good model stays good without monitoring.
+
+:::
+
+:::
+
+:::
+<!-- END PROFILE:r-teaching-guide -->
+
+<!-- BEGIN PROFILE:r-solutions -->
+::: {.content-visible when-profile="r-solutions" when-profile="r-teaching-guide"}
+
+::: {.solution-block}
+
+::: {.solution-block-header}
+Solution
+:::
+
+::: {.solution-block-body}
+
+**(a). Check the sample mismatch**
+
+```{r}
+tibble(
+  sample = c("Full test sample", "OLS-safe test sample"),
+  n_games = c(
+    nrow(test_sample_2013_2015),
+    nrow(safe_test_sample)
+  )
+)
+
+test_sample_2013_2015 |>
+  filter(!(opp %in% known_opp_levels)) |>
+  count(opp, sort = TRUE)
+```
+
+The full test sample has 243 games, while `safe_test_sample` has 232 games. The 11 dropped games are Houston games. They are dropped because Houston appears in the 2013-2015 test period but not in the 2005-2012 training period, so the OLS model with opponent categories cannot generate predictions for that unseen opponent level.
+
+**(b). Read the same-sample comparison table**
+
+The table compares the best cell-means model with the best OLS model after evaluating both on `safe_test_sample`. This is fair because both rows use the same test games. The earlier direct comparison was not fair because `simple_model_metrics` used all 243 test games, while `ols_model_metrics` used the 232 OLS-safe games. Any difference could reflect the model, the changed sample, or both.
+
+**(c). Interpret the comparison**
+
+The quadratic game-number OLS model has the lower MAE, but the advantage over the best cell-means model is small. RMSE and MAPE tell the same broad story: the OLS gain is modest, not transformative.
+
+**(d). Recommendation and practical use**
+
+A defensible recommendation is the Day/Night cell-means model. It is slightly less accurate than the best OLS model on MAE, but the difference is small, the model is transparent, and the predictor is known well before the game.
+
+In practice, the manager would use the model before each game to predict attendance, convert that prediction into baseline staff using a service-rate rule, and add a buffer informed by MAE.
+
+It is also defensible to recommend the quadratic OLS model if the group thinks the small MAE gain is worth the added complexity.
+
+**(e). Updating the model**
+
+The manager should monitor forecast errors, service quality, queue lengths, and labour utilisation. The model may need updating if errors increase, if a new opponent appears, if team performance changes sharply, if promotions or scheduling patterns change, or if there is a major structural break such as a capacity change or another disruption that makes older attendance patterns less relevant.
+
+:::
+
+:::
+
+:::
+<!-- END PROFILE:r-solutions -->

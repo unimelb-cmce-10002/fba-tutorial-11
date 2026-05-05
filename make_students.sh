@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OUT="tutorial_student.qmd"
+OUT="tutorial-9-student.qmd"
 > "$OUT"
 
 # 🔼 STEP 1: Add clean YAML header
@@ -34,7 +34,7 @@ qnum=1
 
 for f in "${FILES[@]}"; do
   # Detect question type
-  qtype=$(grep -oP '(?<=<!-- question-type: )\w+(?= -->)' "$f")
+  qtype=$(sed -n 's/^<!-- question-type: \([[:alnum:]_-]*\) -->$/\1/p' "$f" | head -n 1)
 
   # Insert prepare header once before first prepare question
   if [[ "$qtype" == "prepare" && "$inserted_prepare" -eq 0 ]]; then
@@ -42,7 +42,7 @@ for f in "${FILES[@]}"; do
       /<!-- BEGIN INSERT:prepare-header -->/ { in_block = 1; next }
       /<!-- END INSERT:prepare-header -->/   { in_block = 0; next }
       in_block == 1 { print }
-    ' tutorial.qmd >> "$OUT"
+    ' tutorial-predictive.qmd >> "$OUT"
     echo -e "\n\n" >> "$OUT"
     inserted_prepare=1
   fi
@@ -53,7 +53,7 @@ for f in "${FILES[@]}"; do
       /<!-- BEGIN INSERT:inclass-header -->/ { in_block = 1; next }
       /<!-- END INSERT:inclass-header -->/   { in_block = 0; next }
       in_block == 1 { print }
-    ' tutorial.qmd >> "$OUT"
+    ' tutorial-predictive.qmd >> "$OUT"
     echo -e "\n\n" >> "$OUT"
     inserted_inclass=1
   fi

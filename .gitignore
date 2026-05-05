@@ -1,4 +1,5 @@
 *.html
+.DS_Store
 *.Rproj
 .quarto/*
 .Rproj.user/*
@@ -6,3 +7,12 @@
 .Rproj.user
 
 /.quarto/
+
+# Generated Quarto/knitr outputs
+*_cache/
+*_files/
+
+# Local agent state files
+AGENT_INSTRUCTIONS.md
+CONSTRAINTS.md
+PROGRESS.md

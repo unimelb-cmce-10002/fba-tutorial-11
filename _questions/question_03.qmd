@@ -1,9 +1,21 @@
 <!-- question-type: inclass -->
 ### Exercise 3: Fitting regression models
 
-We now turn to ordinary least squares regression models that combine multiple predictors to forecast attendance. OLS regression is a powerful and interpretable method that estimates the relationship between a dependent variable (attendance) and one or more independent variables (e.g., day of week, opponent, game time).
+Exercises 1 and 2 used simple cell-means models: each forecast came from the average attendance for one group of games. We now turn to ordinary least squares (OLS) regression, which among other things lets us combine multiple predictors in a single model.
 
-**(a).** Let's begin by fitting an OLS model that uses opponent, day/night, and day of week. We will follow the same process as before and fit on the training data. Complete and run the code below to fit this model.
+The aim is not to find the most complicated model possible. The aim is to ask whether a richer model improves the forecast enough to justify the extra complexity for staffing decisions.
+
+::: {.callout-note title="What is OLS regression?" collapse="true"}
+Ordinary least squares (OLS) regression is a way to model the relationship between an outcome we want to predict and one or more predictors. Here, the outcome is attendance, and the predictors might include opponent, game time, day of week, or game number.
+
+OLS works by choosing the line, curve, or set of group differences that makes the model's prediction errors as small as possible in the training data. More precisely, it chooses the coefficients that minimise the sum of squared errors: the squared differences between the actual attendance values and the model's fitted values.
+
+For example, a simple regression might estimate how attendance changes between day and night games. A richer regression can combine several predictors at once, such as opponent, day/night, and day of week. When a predictor is categorical, such as opponent, OLS compares each category to a reference category.
+
+In this tutorial, we use OLS as a forecasting tool. We fit the model on earlier seasons, use it to predict attendance in later seasons, and then evaluate whether those predictions are accurate enough and explainable enough to support staffing decisions.
+:::
+
+**(a).** Fit an OLS model that uses the same forward-available predictors we studied earlier: opponent, day/night, and day of week. Complete and run the code below.
 
 ```{r}
 #| eval: false
@@ -12,10 +24,9 @@ basic_ols_model <-
   lm(YOUR_CODE_HERE ~ YOUR_CODE_HERE + YOUR_CODE_HERE + YOUR_CODE_HERE, 
      data = YOUR_CODE_HERE                                               
   )
-
 ```
 
-**(b).** Run the code below to view this model's basic statistics. What do you notice about the coefficients for the different predictors? What does the R-squared value tell you about the model's fit?
+**(b).** Run the code below to view the model summary.
 
 ```{r}
 #| eval: false
@@ -23,9 +34,13 @@ basic_ols_model <-
 summary(basic_ols_model)
 ```
 
-**(c).** Alternatively, we can add nonlinearity by including polynomial terms. For instance, we might expect attendance to vary nonlinearly with game number (e.g., early-season games are better attended than late-season games, or vice-versa). 
+Discuss with your group:
 
-Run the code below. What does this plot suggest about how attendance varies over the course of the MLB season?
+- Which predictors appear to have the largest associations with attendance?
+- What does the R-squared value tell us about in-sample fit?
+- Why should we avoid choosing the model on R-squared alone?
+
+**(c).** The basic OLS model combines categorical predictors. We can also ask whether attendance changes systematically over the course of the season. Run the two plots below to compare a simple quadratic curve with a more flexible degree-8 curve.
 
 ```{r}
 #| eval: false
@@ -44,33 +59,6 @@ ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
     y     = "Attendance"
   ) +
   theme_minimal()
-```
-
-**(d).** Now, let's fit a polynomial regression model that includes a quadratic term for game number. Complete and run the code below to fit this model.
-
-```{r}
-#| eval: false
-
-non_linear_ols_model <- 
-  lm(YOUR_CODE_HERE ~ YOUR_CODE_HERE + I(YOUR_CODE_HERE^2), 
-     data = YOUR_CODE_HERE
-  )
-```
-
-**(e).** Run the code below to view this model's basic statistics. How do the coefficients for the polynomial terms compare to those in the previous model? What does the R-squared value tell you about this model's fit?
-
-```{r}
-#| eval: false
-
-summary(non_linear_ols_model)
-```
-
-**(f).** Finally, we can fit a highly flexible polynomial model that includes up to an 8th-degree polynomial in game number, along with opponent, day/night, and day of week. This allows us to capture complex seasonal patterns in attendance.
-
-Run the code below. What does this plot suggest about how attendance varies over the course of the MLB season? Why should we be cautious about using such a high-degree polynomial?
-
-```{r}
-#| eval: false
 
 ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
   geom_point(alpha = 0.6) +
@@ -89,25 +77,43 @@ ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
   theme_minimal()
 ```
 
-**(g).** Now, let's fit this high-degree polynomial regression model that also includes opponent, day/night, and day of week. Complete and run the code below to train this model.
+Which curve looks more likely to generalise to future games, and why?
+
+**(d).** Let's formally model the plots above. Run the code below to fit two additional OLS specifications: a simple quadratic model using game number, and a more flexible specification that combines opponent, day/night, day of week, and a degree-8 polynomial in game number.
 
 ```{r}
 #| eval: false
 
+non_linear_ols_model <- 
+  lm(attendance ~ gm + I(gm^2), 
+     data = training_sample_2005_2012
+  )
+
 eighth_poly_ols_model <- 
-  lm(YOUR_CODE_HERE ~ opp + day_night + dotw + gm + I(gm^2) + 
+  lm(attendance ~ opp + day_night + dotw + gm + I(gm^2) + 
      I(gm^3) + I(gm^4) + I(gm^5) + I(gm^6) + I(gm^7) + I(gm^8),
-     data = YOUR_CODE_HERE
+     data = training_sample_2005_2012
   )
 ```
 
-**(h).** Run the code below to view this model's basic statistics. What does the R-squared value tell you about this model's fit?
+**(e).** Complete and run the code below to compare in-sample R-squared across the three OLS specifications.
 
 ```{r}
 #| eval: false
 
-summary(eighth_poly_ols_model)
+ols_fit_summary <- tibble(
+  model = c("Basic OLS", "Quadratic game number", "Degree-8 polynomial OLS"),
+  r_squared = c(
+    summary(YOUR_CODE_HERE)$r.squared,
+    summary(YOUR_CODE_HERE)$r.squared,
+    summary(YOUR_CODE_HERE)$r.squared
+  )
+)
+
+ols_fit_summary
 ```
+
+Which model fits the training data best? Why is this not enough to choose the forecasting model? In your answer, consider fit, complexity, and operational usefulness.
 
 
 <!-- BEGIN PROFILE:r-teaching-guide -->
@@ -124,44 +130,29 @@ Teaching Note
 🎯 **Learning Objective** 
 Students should:
 
-- Fit and interpret OLS with categorical predictors (opponent, day/night, day-of-week).
-
-- Incorporate nonlinearity with polynomial terms in a continuous predictor (game number).
-
-- Contrast in-sample fit (R²) with model complexity and discuss risks of overfitting (e.g., degree-8).
-
-- Read OLS output: reference levels, coefficient interpretation, overall F-test, and limits of R².
+- Fit OLS models that extend the forward-available predictors from Exercises 1-2.
+- Interpret R-squared as in-sample fit, not forecast quality.
+- Explain why the best-fitting training model is not automatically the best forecasting model.
 
 ✅   **Core Concepts to Highlight**
 
-- R² vs usefulness: Higher R² does not guarantee better generalization; use test-set error for that claim.
-
-- Polynomial terms: `I(gm^k)` adds flexibility; higher degrees → potential overfit and edge wiggles.
-
-- Visualization to hypothesize form (quadratic smoother) before fitting.
-
+- OLS combines predictors that cell-means models handled separately.
+- R-squared measures training fit, not future forecast accuracy.
+- Highly flexible models can fit noise, especially near the edges of the season.
+- Operational usefulness matters: a slightly richer model may not be worth using if it is harder to explain.
 
 💬 **Suggested In-Class Prompts** (if needed)
 
-- “Why might many opponent coefficients be insignificant?”
-
-- “What does R² ≈ 0.165 tell us here?”
-
-- “If the pattern is weak, should we still model it? Why/why not?”
-
-- “What risks do high-degree polynomials pose for out-of-sample performance?”
+- "Which predictors would a staffing manager know before the game?"
+- "Where might the degree-8 curve be fitting noise rather than structure?"
+- "What do we still need to know before choosing the model for staffing?"
 
 📌 **Common Misunderstandings**
 
-- Misreading baselines: forgetting that factor coefficients are relative to the reference category.
-
-- R² worship: assuming higher R² = better model; ignoring OOS error and operational relevance.
-
-- Polynomial misuse: adding high-degree terms without checking stability/interpretability; not wrapping in I().
-
-- Leakage risk (general reminder): fitting on training only; all plots that motivate form should still use training for downstream modeling choices.
-
-- Over-interpreting noisy smooths: taking small undulations as “real” effects.
+- Treating R-squared as a test-set accuracy metric.
+- Reading factor coefficients without remembering the reference category.
+- Filling the R-squared table with model names as text rather than fitted model objects inside `summary()`.
+- Assuming every wiggle in a polynomial curve reflects a real seasonal pattern.
 
 :::
 
@@ -190,17 +181,15 @@ basic_ols_model <-
   )
 ```
 
-**(b). Viewing model statistics**
+**(b). Viewing the model summary**
 
 ```{r}
 summary(basic_ols_model)
 ```
 
-The intercept is the baseline (day game, reference opponent/day), and most opponent effects are small and not statistically significant; a few are sizable/negative and significant (e.g., CIN −2247, PIT −2291, TBD −1536), while night games add about +275 attendees (p < .01); day-of-week terms are mostly negligible.
+Some opponents and game-time categories are associated with attendance, but R-squared only summarises training fit. It does not tell us whether the model will forecast later seasons well.
 
-R-squared = 0.165 indicates the model explains a modest share of variation—useful signal but a lot left unexplained—though the overall F-test is highly significant, so the predictors improve fit vs. a mean-only model.
-
-**(c). Plotting attendance vs. game number with a quadratic fit**
+**(c). Comparing seasonal curves**
 
 ```{r}
 ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
@@ -217,30 +206,7 @@ ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
     y     = "Attendance"
   ) +
   theme_minimal()
-```
 
-Attendance follows a gentle inverted-U: it edges up from early games to a mid-season peak, then drifts down toward season’s end (some reasons for this could be that people take a while to 'get into' the baseball season, or that mid-season coincides with the middle of summer when people have time off to attend games, etc. The effect is modest relative to the overall scatter, so game-to-game variability remains large.
-
-**(d). Fitting an OLS model with a quadratic term**
-
-```{r}
-non_linear_ols_model <- 
-  lm(attendance ~ gm + I(gm^2), 
-     data = training_sample_2005_2012
-  )
-```
-
-**(e). Viewing model statistics**
-
-```{r}
-summary(non_linear_ols_model)
-```
-
-The coefficients are small and not significant and so suggest the inverted-U shape is weak. R-squared = 0.005 indicates this model explains very little of the variation in attendance. The categorical model with opponent + day/night + dotw had R-squared = 0.165 and was jointly significant—better in-sample fit—though (as noted earlier) lower in-sample R-squared can still yield better out-of-sample errors when the simpler structure generalizes.
-
-**(f). Plotting attendance vs. game number with an 8th-degree polynomial fit**
-
-```{r}
 ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
   geom_point(alpha = 0.6) +
   stat_smooth(
@@ -258,27 +224,41 @@ ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
   theme_minimal()
 ```
 
-Attendance wiggles gently around ~37k across the season—small undulations with slight bumps mid-season and end-effects, not large systematic swings.
-A degree-8 polynomial can overfit noise, creating spurious wiggles (especially near the edges) that don’t generalize out of sample. Such fits are unstable to small data changes, hard to interpret, and can degrade test accuracy versus simpler forms (e.g., quadratic or cross-validated splines).
+The quadratic curve is more likely to generalise because it imposes a simpler seasonal pattern. The degree-8 curve may be fitting random ups and downs in the training data.
 
-**(g). Fitting an OLS model with an 8th-degree polynomial term**
+**(d). Fitting the polynomial models**
 
 ```{r}
+non_linear_ols_model <- 
+  lm(attendance ~ gm + I(gm^2), 
+     data = training_sample_2005_2012
+  )
+
 eighth_poly_ols_model <- 
-  lm(attendance ~ opp + day_night + dotw + gm + I(gm ^ 2) + I(gm ^ 3) + 
-     I(gm ^ 4) + I(gm ^ 5) + I(gm ^ 6) + I(gm ^ 7) + I(gm ^ 8),
+  lm(attendance ~ opp + day_night + dotw + gm + I(gm^2) + 
+     I(gm^3) + I(gm^4) + I(gm^5) + I(gm^6) + I(gm^7) + I(gm^8),
      data = training_sample_2005_2012
   )
 ```
 
-**(h). Viewing model statistics**
+**(e). Comparing in-sample R-squared**
 
 ```{r}
-summary(eighth_poly_ols_model)
+ols_fit_summary <- tibble(
+  model = c("Basic OLS", "Quadratic game number", "Degree-8 polynomial OLS"),
+  r_squared = c(
+    summary(basic_ols_model)$r.squared,
+    summary(non_linear_ols_model)$r.squared,
+    summary(eighth_poly_ols_model)$r.squared
+  )
+)
+
+ols_fit_summary
 ```
 
-R-squared = 0.177 suggests that the models barely improves over the simpler OLS from earlier, indicating limited additional explanatory power (and potential overfitting). The overall F-test is significant, so these predictors improve on a mean-only model, but most of the variation remains unexplained.
+Use `basic_ols_model`, `non_linear_ols_model`, and `eighth_poly_ols_model` inside `summary()`.
 
+The degree-8 model should have the highest R-squared because it is most flexible. That does not make it the best forecasting model: simpler models may generalise better and may be easier to explain for staffing decisions.
 
 :::
 

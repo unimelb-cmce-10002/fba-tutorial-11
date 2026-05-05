@@ -8,9 +8,9 @@ Welcome! This repository helps you build **clean, student-facing tutorials** for
 _quarto-r-questions.yml     # YAML for rendering only r-questions
 _quarto-r-solutions.yml     # YAML for rendering only r-solutions
 _quarto-r-teaching-guide.yml# YAML for rendering only r-teaching-guide
-make_student.sh             # Script to generate clean student version
+make_students.sh            # Script to generate clean student version
 render.sh                   # Renders all instructor profiles and student file
-tutorial.qmd                # Master tutorial (uses includes + profiles)
+tutorial-predictive.qmd     # Master tutorial source (uses includes + profiles)
 _questions/                 # Individual question files (one per exercise)
 _learning_goals/            # Learning goal callout (optional)
 _introduction/              # Introductory content (e.g., case study prompt)
@@ -57,7 +57,7 @@ Each question file can also include **instructor-only material**:
   <!-- END PROFILE:r-solutions -->
   ```
 
-The script will strip this material out of the final `tutorial_student.qmd` but preserve it for teaching preparation.
+The script will strip this material out of the final `tutorial-9-student.qmd` but preserve it for teaching preparation.
 
 ### 3. Include Learning Goals and Business Context
 You can update the following files:
@@ -83,8 +83,8 @@ Edit only this block. It gets inserted into the top of the student version as th
 
 Note: Each Quarto profile (r-questions, r-solutions, r-teaching-guide) has its own `.yml` file to control rendering for different audiences.
 
-### 5. Use `tutorial.qmd` as Your Master File
-The file `tutorial.qmd` is the **master document** rendered by each Quarto profile:
+### 5. Use `tutorial-predictive.qmd` as Your Master File
+The file `tutorial-predictive.qmd` is the **master document** rendered by each Quarto profile:
 
 - It includes the structure of the tutorial using `{{< include ... >}}` tags
 - It references:
@@ -100,7 +100,7 @@ The file `tutorial.qmd` is the **master document** rendered by each Quarto profi
     ```
 - It is rendered differently depending on the profile used (e.g. `r-solutions` will show answers, `r-teaching-guide` will show teaching notes)
 
-Note: `tutorial.qmd` is not used when generating `tutorial_student.qmd`. The student version is assembled separately using `make_student.sh`.
+Note: `tutorial-predictive.qmd` is not used directly when generating `tutorial-9-student.qmd`. The student version is assembled separately using `make_students.sh`.
 
 ## ▶️ Build and Render the Tutorial
 
@@ -119,10 +119,10 @@ This will:
 - Then run the student cleaner script:
 
 ```bash
-bash make_student.sh
+bash make_students.sh
 ```
 
-This generates `tutorial_student.qmd`, which includes:
+This generates `tutorial-9-student.qmd`, which includes:
 
 - Only student-visible content
 - All prepare/in-class questions in the right place
