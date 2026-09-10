@@ -1,0 +1,351 @@
+## Key R functions used in this notebook
+
+This page collects every new R function you used in this tutorial, in one place, as a quick-reference glossary. Each function below follows the same format:
+
+- **Package:** where the function comes from. Most functions you'll meet early on are **Base R** (built into R, no setup needed). Others live in packages that must be loaded first with `library()`.
+- **What it does:** a plain-English explanation, no jargon.
+- **Why you'd use it:** the everyday analyst reason you'd reach for it.
+- **Arguments:** the inputs you put inside the parentheses `()` to tell the function exactly what to work on. Some are required, some are optional. Arguments listed here are not necessarily exhaustive.
+- **Example:** the function used on this tutorial's Fenway Park attendance data.
+
+For more information on any function, use ?`function_name` in the R console (e.g. `?filter`) to see the official documentation, which includes a full list of arguments, descriptions, and often many examples.
+
+### `pretty_breaks()`
+
+**Package:** scales
+
+**What it does:** Calculates a set of nicely rounded numbers to use as axis tick marks, rather than awkward decimals.
+
+**Why you'd use it:** It is used inside `scale_y_continuous()` to make chart axes easier to read, with round numbers like 30,000 and 35,000 instead of arbitrary values.
+
+**Arguments:**
+
+- `n` — roughly how many break points you'd like, such as `n = 5`. R may not use this exact number, but will aim close to it.
+
+**Example:**
+
+```{r}
+#| eval: false
+scale_y_continuous(breaks = scales::pretty_breaks(n = 5))
+```
+
+### `coord_cartesian()`
+
+**Package:** ggplot2, part of the tidyverse
+
+**What it does:** Zooms the plot in on a chosen range of the axes, without dropping or altering any of the underlying data.
+
+**Why you'd use it:** To focus attention on the part of the chart that matters, such as the range where attendance actually varies, instead of starting the y-axis at zero.
+
+**Arguments:**
+
+- `ylim` — *(optional)* the lower and upper limits to zoom the y-axis to, such as `ylim = c(30000, 40000)`.
+
+**Example:**
+
+```{r}
+#| eval: false
+coord_cartesian(ylim = c(30000, 40000))
+```
+
+### `element_blank()`
+
+**Package:** ggplot2, part of the tidyverse
+
+**What it does:** Tells ggplot2 to draw nothing for a particular plot element, effectively removing it.
+
+**Why you'd use it:** It's used inside `theme()` to switch off parts of a plot you don't want, such as vertical gridlines.
+
+**Arguments:**
+
+- none. It always means "draw nothing here."
+
+**Example:**
+
+```{r}
+#| eval: false
+theme(panel.grid.major.x = element_blank())
+```
+
+### `factor()`
+
+**Package:** Base R
+
+**What it does:** Converts a column into a categorical variable with a set list of allowed values (levels), optionally in a specific order.
+
+**Why you'd use it:** To make sure categories like days of the week are ordered sensibly (Monday through Sunday) on a plot, instead of alphabetically.
+
+**Arguments:**
+
+- `x` — the column to convert, such as `dotw`.
+- `levels` — *(optional)* the exact order of category values you want, such as `c("Monday", "Tuesday", ...)`.
+
+**Example:**
+
+```{r}
+#| eval: false
+factor(
+  dotw,
+  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+)
+```
+
+### `position_dodge()`
+
+**Package:** ggplot2, part of the tidyverse
+
+**What it does:** Tells `geom_col()` to place bars from different groups side by side, instead of stacking them on top of each other.
+
+**Why you'd use it:** When comparing, say, day and night games within each day of the week, dodged bars are easier to compare than stacked ones.
+
+**Arguments:**
+
+- `width` — *(optional)* how much horizontal space the dodged bars take up, such as `width = 0.7`.
+
+**Example:**
+
+```{r}
+#| eval: false
+geom_col(position = position_dodge(width = 0.7), width = 0.6)
+```
+
+### `rename()`
+
+**Package:** dplyr, part of the tidyverse
+
+**What it does:** Changes the name of one or more columns in a data frame, without changing anything else.
+
+**Why you'd use it:** After joining in a new average column, it usually arrives called something generic like `ave_attendance`. Renaming it (e.g. to `predicted_attendance_daynight`) keeps things clear once you've joined in several such columns.
+
+**Arguments:**
+
+- `.data` — the data frame to rename columns in.
+- `new_name = old_name` — the new column name, followed by the current one, such as `predicted_attendance_daynight = ave_attendance`.
+
+**Example:**
+
+```{r}
+#| eval: false
+rename(predicted_attendance_daynight = ave_attendance)
+```
+
+### `recode()`
+
+**Package:** dplyr, part of the tidyverse
+
+**What it does:** Replaces specific values in a column with new values you choose, such as turning a column name into a readable label.
+
+**Why you'd use it:** After `pivot_longer()`, the `model` column contains raw column names like `predicted_attendance_daynight`. `recode()` relabels these as something readable, like `"Day/Night"`, for tables and plots.
+
+**Arguments:**
+
+- `.x` — the column whose values you want to replace, such as `model`.
+- `...` — one or more `old_value = "new_value"` pairs, such as `predicted_attendance_daynight = "Day/Night"`.
+
+**Example:**
+
+```{r}
+#| eval: false
+mutate(
+  model = recode(
+    model,
+    predicted_attendance_daynight = "Day/Night",
+    predicted_attendance_dotw_dn = "Day of week x Day/Night",
+    predicted_attendance_opp = "Opponent"
+  )
+)
+```
+
+### `abs()`
+
+**Package:** Base R
+
+**What it does:** Returns the absolute value of a number, that is, its size ignoring whether it is positive or negative.
+
+**Why you'd use it:** Forecast errors can be positive (you underpredicted) or negative (you overpredicted). `abs()` turns every error into a positive size, so you can compare and average how big the misses were regardless of direction, which is exactly what MAE (Mean Absolute Error) needs.
+
+**Arguments:**
+
+- `x` — the number or column of numbers to take the absolute value of, such as `error`.
+
+**Example:**
+
+```{r}
+#| eval: false
+abs_error <- abs(error)
+```
+
+### `sqrt()`
+
+**Package:** Base R
+
+**What it does:** Calculates the square root of a number.
+
+**Why you'd use it:** RMSE (Root Mean Squared Error) is calculated by squaring the errors, averaging them, and then taking the square root, so `sqrt()` is the last step in getting RMSE back into the same units as attendance (fans), rather than "fans squared."
+
+**Arguments:**
+
+- `x` — the number (or column of numbers) to take the square root of.
+
+**Example:**
+
+```{r}
+#| eval: false
+RMSE <- sqrt(mean(squared_error, na.rm = TRUE))
+```
+
+### `lm()`
+
+**Package:** Base R (the stats package, which is built into R and loads automatically)
+
+**What it does:** Fits an ordinary least squares (OLS) regression model, estimating how one or more predictors relate to an outcome you're trying to explain or forecast.
+
+**Why you'd use it:** To combine several predictors, such as opponent, day/night, and day of week, into a single model of attendance, rather than fitting one cell-means model per predictor separately.
+
+**Arguments:**
+
+- `formula` — describes the outcome and predictors as `outcome ~ predictor1 + predictor2`, such as `attendance ~ opp + day_night + dotw`.
+- `data` — the data frame the model should be fitted on, such as `training_sample_2005_2012`.
+
+**Example:**
+
+```{r}
+#| eval: false
+basic_ols_model <-
+  lm(attendance ~ opp + day_night + dotw, data = training_sample_2005_2012)
+```
+
+### `summary()`
+
+**Package:** Base R
+
+**What it does:** Prints a detailed summary of an R object. For a fitted model, this includes the estimated coefficients, their statistical significance, and the R-squared value.
+
+**Why you'd use it:** To inspect what a model has learned: which predictors matter, and how well the model fits the training data.
+
+**Arguments:**
+
+- `object` — the object to summarise, such as a fitted model like `basic_ols_model`.
+
+**Example:**
+
+```{r}
+#| eval: false
+summary(basic_ols_model)
+```
+
+### `stat_smooth()`
+
+**Package:** ggplot2, part of the tidyverse
+
+**What it does:** Fits a statistical model to your data and draws the resulting trend line or curve directly on the plot.
+
+**Why you'd use it:** To visually compare how different curves, like a simple quadratic versus a very flexible degree-8 polynomial, fit the same scatter of attendance points across the season.
+
+**Arguments:**
+
+- `method` — the fitting method to use, such as `"lm"` for a linear model.
+- `formula` — the shape of the curve to fit, such as `y ~ x + I(x^2)` for a quadratic curve.
+- `se` — *(optional)* set to `FALSE` to hide the shaded confidence band around the line.
+
+**Example:**
+
+```{r}
+#| eval: false
+ggplot(training_sample_2005_2012, aes(x = gm, y = attendance)) +
+  geom_point(alpha = 0.6) +
+  stat_smooth(method = "lm", formula = y ~ x + I(x^2), se = FALSE)
+```
+
+### `I()`
+
+**Package:** Base R
+
+**What it does:** Tells R to treat what's inside the parentheses as an ordinary arithmetic calculation, rather than as special model-formula shorthand.
+
+**Why you'd use it:** Inside a model formula, symbols like `^` normally have a different meaning. Wrapping a term in `I()`, such as `I(gm^2)`, tells R "actually square this variable," so you can add curved (polynomial) terms like game-number-squared to a regression.
+
+**Arguments:**
+
+- `x` — the calculation to protect and evaluate literally, such as `gm^2`.
+
+**Example:**
+
+```{r}
+#| eval: false
+non_linear_ols_model <-
+  lm(attendance ~ gm + I(gm^2), data = training_sample_2005_2012)
+```
+
+### `tibble()`
+
+**Package:** tibble, part of the tidyverse
+
+**What it does:** Builds a new data frame (a "tibble," the tidyverse's version of a data frame) from scratch, out of columns you specify directly.
+
+**Why you'd use it:** To assemble a small results table by hand, such as comparing the R-squared of several models side by side, or comparing sample sizes before and after filtering.
+
+**Arguments:**
+
+- `...` — one or more columns, each defined as `name = c(value1, value2, ...)`, such as `model = c("Basic OLS", "Quadratic game number")`.
+
+**Example:**
+
+```{r}
+#| eval: false
+ols_fit_summary <- tibble(
+  model = c("Basic OLS", "Quadratic game number", "Degree-8 polynomial OLS"),
+  r_squared = c(
+    summary(basic_ols_model)$r.squared,
+    summary(non_linear_ols_model)$r.squared,
+    summary(eighth_poly_ols_model)$r.squared
+  )
+)
+```
+
+### `unique()`
+
+**Package:** Base R
+
+**What it does:** Returns the distinct (non-repeated) values from a vector, with duplicates removed.
+
+**Why you'd use it:** To get a list of every opponent that appears in the training data, without repeats, so you can check which opponents the test data also contains.
+
+**Arguments:**
+
+- `x` — the vector to remove duplicate values from, such as the column of opponent names pulled out with `pull(opp)`.
+
+**Example:**
+
+```{r}
+#| eval: false
+known_opp_levels <-
+  training_sample_2005_2012 |>
+  pull(opp) |>
+  unique()
+```
+
+### `predict()`
+
+**Package:** Base R (the stats package, which is built into R and loads automatically)
+
+**What it does:** Uses a fitted model to generate predictions for new data that the model has not seen before.
+
+**Why you'd use it:** After fitting a model like `basic_ols_model` on the training seasons, `predict()` is how you generate its attendance forecasts for the test seasons.
+
+**Arguments:**
+
+- `object` — the fitted model to use, such as `basic_ols_model`.
+- `newdata` — the data frame of new rows to predict for, such as `safe_test_sample`.
+
+**Example:**
+
+```{r}
+#| eval: false
+safe_test_sample <-
+  safe_test_sample |>
+  mutate(
+    predicted_attendance_basic_OLS = predict(basic_ols_model, newdata = safe_test_sample)
+  )
+```
+
